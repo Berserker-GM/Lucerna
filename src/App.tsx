@@ -215,7 +215,7 @@ export default function App() {
   }
 
   if (phase === 'gender') {
-    return <GenderSelection onComplete={handleGenderSelection} />;
+    return <GenderSelection onComplete={handleAuth} />;
   }
 
   return (

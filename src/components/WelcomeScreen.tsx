@@ -82,7 +82,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
         </button>
       </div>
 
-      <style jsx>{`
+      <style>{`
         @keyframes float {
           0% {
             transform: translateY(100vh) scale(0);
