@@ -14,6 +14,7 @@ import { RelaxingGames } from './components/RelaxingGames';
 import { PeriodTracker } from './components/PeriodTracker';
 import { MoodGraph } from './components/MoodGraph';
 import { MedicineTracker } from './components/MedicineTracker';
+import { AnimatedBackground } from './components/AnimatedBackground';
 import {
   Zap,
   BookOpen,
@@ -272,36 +273,54 @@ export default function App() {
   // Show loading while checking session
   if (isCheckingSession) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 flex items-center justify-center">
-        <div className="text-center">
-          <Sparkles className="w-16 h-16 text-white animate-bounce mx-auto mb-4" />
-          <p className="text-white text-xl">Loading Lucerna...</p>
+      <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+        <AnimatedBackground />
+        <div className="text-center relative z-10">
+          <Sparkles className="w-16 h-16 text-purple-600 animate-bounce mx-auto mb-4" />
+          <p className="text-purple-800 text-xl font-medium">Loading Lucerna...</p>
         </div>
       </div>
     );
   }
 
   if (phase === 'welcome') {
-    return <WelcomeScreen onComplete={() => setPhase('auth')} />;
+    return (
+      <>
+        <AnimatedBackground />
+        <WelcomeScreen onComplete={() => setPhase('auth')} />
+      </>
+    );
   }
 
   if (phase === 'auth') {
-    if (authMode === 'signin') {
-      return <SignIn onComplete={handleAuthComplete} onSwitch={() => setAuthMode('signup')} />;
-    } else {
-      return <SignUp onComplete={handleAuthComplete} onSwitch={() => setAuthMode('signin')} />;
-    }
+    return (
+      <>
+        <AnimatedBackground />
+        {authMode === 'signin' ? (
+          <SignIn onComplete={handleAuthComplete} onSwitch={() => setAuthMode('signup')} />
+        ) : (
+          <SignUp onComplete={handleAuthComplete} onSwitch={() => setAuthMode('signin')} />
+        )}
+      </>
+    );
   }
 
   if (phase === 'gender') {
-    return <GenderSelection onComplete={handleGenderSelection} />;
+    return (
+      <>
+        <AnimatedBackground />
+        <GenderSelection onComplete={handleGenderSelection} />
+      </>
+    );
   }
 
   // Main app
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen relative">
+      <AnimatedBackground />
+
       {/* Header */}
-      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 shadow-lg">
+      <div className="bg-gradient-to-r from-purple-600 to-pink-600 text-white p-6 shadow-lg relative z-10">
         <div className="max-w-6xl mx-auto flex justify-between items-center">
           <div>
             <h1 className="text-3xl flex items-center gap-2">
@@ -335,7 +354,7 @@ export default function App() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-6xl mx-auto p-6">
+      <div className="max-w-6xl mx-auto p-6 relative z-10">
         {/* Quick Actions */}
         <div className="mb-8">
           <h2 className="text-2xl mb-4 text-gray-800">Daily Essentials</h2>

@@ -52,7 +52,7 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
   const randomJoke = jokes[Math.floor(Math.random() * jokes.length)];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 flex items-center justify-center relative overflow-hidden p-4">
+    <div className="min-h-screen flex items-center justify-center relative overflow-hidden p-4">
       {/* Main Content */}
       <div className={`text-center z-10 px-6 transition-all duration-1000 max-w-4xl w-full ${showMessage ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
         <div className="mb-8 flex justify-center gap-4">

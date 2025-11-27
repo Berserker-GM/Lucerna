@@ -61,7 +61,7 @@ export function SignIn({ onComplete, onSwitch }: SignInProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4">
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
