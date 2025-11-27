@@ -3,7 +3,7 @@ import { UserPlus, Mail, Lock, User, Sparkles } from 'lucide-react';
 import { projectId, publicAnonKey } from '../utils/supabase/info';
 
 interface SignUpProps {
-  onComplete: (data: { userId: string; name: string; token: string }) => void;
+  onComplete: (data: { userId: string; name: string; token: string; gender: 'male' | 'female' }) => void;
   onSwitch: () => void;
 }
 
@@ -12,6 +12,7 @@ export function SignUp({ onComplete, onSwitch }: SignUpProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [gender, setGender] = useState<'male' | 'female' | ''>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -20,7 +21,7 @@ export function SignUp({ onComplete, onSwitch }: SignUpProps) {
     setError('');
 
     // Validation
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword || !gender) {
       setError('Please fill in all fields');
       return;
     }
@@ -81,8 +82,21 @@ export function SignUp({ onComplete, onSwitch }: SignUpProps) {
         throw new Error('Account created but failed to sign in. Please try signing in manually.');
       }
 
+      // Save profile with gender
+      await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/profile`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${signinData.accessToken}`,
+          },
+          body: JSON.stringify({ userId: signinData.userId, gender, name }),
+        }
+      );
+
       // Success!
-      onComplete({ userId: signinData.userId, name: signinData.name, token: signinData.accessToken });
+      onComplete({ userId: signinData.userId, name: signinData.name, token: signinData.accessToken, gender });
     } catch (err: any) {
       console.error('Sign up error:', err);
       setError(err.message || 'Failed to create account. Please try again.');
@@ -168,6 +182,44 @@ export function SignUp({ onComplete, onSwitch }: SignUpProps) {
             </div>
           </div>
 
+          {/* Gender Selection */}
+          <div>
+            <label className="block text-gray-700 mb-3">I identify as:</label>
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                type="button"
+                onClick={() => setGender('female')}
+                className={`p-4 rounded-xl border-2 transition-all ${gender === 'female'
+                    ? 'border-pink-500 bg-pink-50 shadow-lg scale-105'
+                    : 'border-gray-300 hover:border-pink-300'
+                  }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <User className={`w-8 h-8 ${gender === 'female' ? 'text-pink-500' : 'text-gray-400'}`} />
+                  <span className={gender === 'female' ? 'text-pink-600 font-medium' : 'text-gray-600'}>
+                    Female
+                  </span>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setGender('male')}
+                className={`p-4 rounded-xl border-2 transition-all ${gender === 'male'
+                    ? 'border-blue-500 bg-blue-50 shadow-lg scale-105'
+                    : 'border-gray-300 hover:border-blue-300'
+                  }`}
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <User className={`w-8 h-8 ${gender === 'male' ? 'text-blue-500' : 'text-gray-400'}`} />
+                  <span className={gender === 'male' ? 'text-blue-600 font-medium' : 'text-gray-600'}>
+                    Male
+                  </span>
+                </div>
+              </button>
+            </div>
+          </div>
+
           {/* Error Message */}
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
@@ -212,7 +264,7 @@ export function SignUp({ onComplete, onSwitch }: SignUpProps) {
         {/* Privacy Note */}
         <div className="mt-6 bg-purple-50 border border-purple-200 rounded-xl p-4">
           <p className="text-xs text-gray-600 text-center">
-            By creating an account, you agree to keep your mental health data private and secure. 
+            By creating an account, you agree to keep your mental health data private and secure.
             We never share your information with third parties.
           </p>
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, X, Sparkles } from 'lucide-react';
 
-export function ChatBot() {
+export function ChatBot({ onEmergency }: { onEmergency: () => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Array<{ text: string; isBot: boolean }>>([]);
   const [input, setInput] = useState('');
@@ -11,7 +11,7 @@ export function ChatBot() {
     // Initialize with time-based greeting
     const hour = new Date().getHours();
     let greeting = "Hi there! 👋 I'm here to support you. ";
-    
+
     if (hour < 12) {
       greeting += "Good morning! Did you have breakfast today? 🍳";
     } else if (hour < 18) {
@@ -19,7 +19,7 @@ export function ChatBot() {
     } else {
       greeting += "Good evening! Did you have dinner? 🌙";
     }
-    
+
     setMessages([{ text: greeting, isBot: true }]);
   }, []);
 
@@ -94,11 +94,30 @@ export function ChatBot() {
       "Thank you for sharing. Your mental health matters. What can I help you with today?",
       "I appreciate you opening up. Would you like to explore the mood tracker or journal features?",
     ],
+    crisis: [
+      "I'm really concerned about you. Please know that you're not alone, and there are people who care about you and want to help. I'm opening your emergency contacts now - please reach out to someone you trust or call a crisis helpline immediately. Your life matters. 💙",
+      "I hear that you're going through an incredibly difficult time. Please don't face this alone. I'm showing you emergency resources right now. There are people trained to help you through this. You deserve support and care. 🫂",
+    ],
   };
 
   const getResponse = (userMessage: string) => {
     const lowercaseMessage = userMessage.toLowerCase();
-    
+
+    // CRITICAL: Check for crisis keywords first
+    const crisisKeywords = [
+      'suicide', 'suicidal', 'kill myself', 'end my life', 'want to die',
+      'die', 'death', 'dying', 'dead', 'harm myself', 'hurt myself',
+      'no reason to live', 'better off dead', 'end it all'
+    ];
+
+    const hasCrisisKeyword = crisisKeywords.some(keyword => lowercaseMessage.includes(keyword));
+
+    if (hasCrisisKeyword) {
+      // Trigger emergency contacts
+      onEmergency();
+      return responses.crisis[Math.floor(Math.random() * responses.crisis.length)];
+    }
+
     // Check for meal responses
     if (lowercaseMessage.includes('yes') && lowercaseMessage.includes('breakfast')) {
       return responses.breakfast[Math.floor(Math.random() * responses.breakfast.length)];
@@ -174,11 +193,10 @@ export function ChatBot() {
                 className={`flex ${message.isBot ? 'justify-start' : 'justify-end'}`}
               >
                 <div
-                  className={`max-w-[80%] p-3 rounded-2xl ${
-                    message.isBot
+                  className={`max-w-[80%] p-3 rounded-2xl ${message.isBot
                       ? 'bg-gray-100 text-gray-800'
                       : 'bg-gradient-to-r from-purple-600 to-pink-600 text-white'
-                  }`}
+                    }`}
                 >
                   {message.text}
                 </div>

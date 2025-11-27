@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { WelcomeScreen } from './components/WelcomeScreen';
 import { SignUp } from './components/SignUp';
 import { SignIn } from './components/SignIn';
@@ -14,21 +14,24 @@ import { RelaxingGames } from './components/RelaxingGames';
 import { PeriodTracker } from './components/PeriodTracker';
 import { MoodGraph } from './components/MoodGraph';
 import { MedicineTracker } from './components/MedicineTracker';
-import { 
-  Zap, 
-  BookOpen, 
-  Users, 
-  Phone, 
-  Music, 
-  Gamepad2, 
-  Calendar, 
+import {
+  Zap,
+  BookOpen,
+  Users,
+  Phone,
+  Music,
+  Gamepad2,
+  Calendar,
   Flame,
   Sparkles,
   Heart,
   Smile,
   TrendingUp,
   Pill,
-  LogOut
+  LogOut,
+  Volume2,
+  VolumeX,
+  Settings
 } from 'lucide-react';
 import { projectId, publicAnonKey } from './utils/supabase/info';
 
@@ -42,7 +45,7 @@ export default function App() {
   const [streak, setStreak] = useState(0);
   const [todayMood, setTodayMood] = useState('');
   const [isCheckingSession, setIsCheckingSession] = useState(true);
-  
+
   // Modal states
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showUplift, setShowUplift] = useState(false);
@@ -50,6 +53,15 @@ export default function App() {
   const [showEmpathy, setShowEmpathy] = useState(false);
   const [showContacts, setShowContacts] = useState(false);
   const [showMusic, setShowMusic] = useState(false);
+  const [showMedicine, setShowMedicine] = useState(false);
+
+  // Background music state
+  const [bgMusicEnabled, setBgMusicEnabled] = useState(() => {
+    const saved = localStorage.getItem('bgMusicEnabled');
+    return saved ? JSON.parse(saved) : true;
+  });
+  const [showSettings, setShowSettings] = useState(false);
+  const bgMusicRef = useRef<HTMLAudioElement | null>(null);
   const [showGames, setShowGames] = useState(false);
   const [showPeriodTracker, setShowPeriodTracker] = useState(false);
   const [showMedicineTracker, setShowMedicineTracker] = useState(false);
@@ -58,6 +70,22 @@ export default function App() {
     // Check for existing session on load
     checkExistingSession();
   }, []);
+
+  // Background music effect
+  useEffect(() => {
+    if (bgMusicRef.current) {
+      if (bgMusicEnabled && phase === 'main') {
+        bgMusicRef.current.play().catch(err => console.log('Audio play failed:', err));
+      } else {
+        bgMusicRef.current.pause();
+      }
+    }
+  }, [bgMusicEnabled, phase]);
+
+  // Save background music preference
+  useEffect(() => {
+    localStorage.setItem('bgMusicEnabled', JSON.stringify(bgMusicEnabled));
+  }, [bgMusicEnabled]);
 
   useEffect(() => {
     if (phase === 'main' && userId) {
@@ -162,7 +190,7 @@ export default function App() {
         const data = await response.json();
         const today = new Date().toISOString().split('T')[0];
         const todayCheckIn = data.checkins?.find((c: any) => c.date === today);
-        
+
         if (todayCheckIn) {
           setTodayMood(todayCheckIn.emoji || '');
         }
@@ -219,10 +247,13 @@ export default function App() {
     }
   };
 
-  const handleAuthComplete = async (data: { userId: string; name: string; token: string }) => {
+  const handleAuthComplete = async (data: { userId: string; name: string; token: string; gender?: 'male' | 'female' }) => {
     setAccessToken(data.token);
     setUserId(data.userId);
     setUserName(data.name);
+    if (data.gender) {
+      setUserGender(data.gender);
+    }
     localStorage.setItem('moodglow_token', data.token);
     localStorage.setItem('moodglow_userId', data.userId);
     setPhase('main');
@@ -421,8 +452,8 @@ export default function App() {
         {/* Mood Graph */}
         <div className="mb-8">
           <h2 className="text-2xl mb-4 text-gray-800">Mood Insights</h2>
-          <MoodGraph 
-            userId={userId} 
+          <MoodGraph
+            userId={userId}
             onCallFriend={() => setShowContacts(true)}
             onCallTherapist={() => setShowEmpathy(true)}
           />
@@ -459,7 +490,63 @@ export default function App() {
       )}
 
       {/* Chatbot */}
-      <ChatBot />
+      <ChatBot onEmergency={() => setShowContacts(true)} />
+
+      {/* Background Music */}
+      <audio
+        ref={bgMusicRef}
+        src="/music/Wellness Piano Loop.mp3"
+        loop
+        volume={0.3}
+      />
+
+      {/* Settings Button */}
+      <button
+        onClick={() => setShowSettings(true)}
+        className="fixed bottom-24 right-6 bg-gray-800 text-white p-4 rounded-full shadow-lg hover:bg-gray-700 transition-all z-40"
+      >
+        <Settings className="w-6 h-6" />
+      </button>
+
+      {/* Settings Modal */}
+      {showSettings && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl">Settings</h2>
+              <button onClick={() => setShowSettings(false)} className="text-gray-400 hover:text-gray-600 text-2xl">
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-3">
+                  {bgMusicEnabled ? (
+                    <Volume2 className="w-6 h-6 text-purple-600" />
+                  ) : (
+                    <VolumeX className="w-6 h-6 text-gray-400" />
+                  )}
+                  <div>
+                    <h3 className="text-lg">Background Music</h3>
+                    <p className="text-sm text-gray-500">Wellness Piano Loop</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setBgMusicEnabled(!bgMusicEnabled)}
+                  className={`relative w-14 h-8 rounded-full transition-colors ${bgMusicEnabled ? 'bg-purple-600' : 'bg-gray-300'
+                    }`}
+                >
+                  <div
+                    className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${bgMusicEnabled ? 'translate-x-6' : 'translate-x-0'
+                      }`}
+                  />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
