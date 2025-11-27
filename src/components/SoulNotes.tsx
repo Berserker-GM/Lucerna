@@ -5,6 +5,7 @@ import { projectId, publicAnonKey } from '../utils/supabase/info';
 interface SoulNotesProps {
   userId: string;
   onClose: () => void;
+  onLatestNote?: (note: string) => void;
 }
 
 interface JournalEntry {
@@ -14,7 +15,7 @@ interface JournalEntry {
   timestamp: string;
 }
 
-export function SoulNotes({ userId, onClose }: SoulNotesProps) {
+export function SoulNotes({ userId, onClose, onLatestNote }: SoulNotesProps) {
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [password, setPassword] = useState('');
   const [savedPassword, setSavedPassword] = useState('');
@@ -44,7 +45,17 @@ export function SoulNotes({ userId, onClose }: SoulNotesProps) {
       }
 
       const data = await response.json();
-      setEntries(data.entries || []);
+      const loadedEntries = data.entries || [];
+      setEntries(loadedEntries);
+
+      // Notify parent of latest note
+      if (loadedEntries.length > 0 && onLatestNote) {
+        const sorted = [...loadedEntries].sort((a: JournalEntry, b: JournalEntry) =>
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+        onLatestNote(sorted[0].content);
+      }
+
       setIsUnlocked(true);
       setSavedPassword(pwd);
       setError('');

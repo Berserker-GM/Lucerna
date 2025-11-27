@@ -65,6 +65,7 @@ export default function App() {
   const [showGames, setShowGames] = useState(false);
   const [showPeriodTracker, setShowPeriodTracker] = useState(false);
   const [showMedicineTracker, setShowMedicineTracker] = useState(false);
+  const [latestSoulNote, setLatestSoulNote] = useState('');
 
   useEffect(() => {
     // Check for existing session on load
@@ -477,7 +478,7 @@ export default function App() {
         />
       )}
       {showUplift && <DailyUplift onClose={() => setShowUplift(false)} />}
-      {showJournal && <SoulNotes userId={userId} onClose={() => setShowJournal(false)} />}
+      {showJournal && <SoulNotes userId={userId} onClose={() => setShowJournal(false)} onLatestNote={setLatestSoulNote} />}
       {showEmpathy && <EmpathyPillar onClose={() => setShowEmpathy(false)} />}
       {showContacts && <EmergencyContacts userId={userId} onClose={() => setShowContacts(false)} />}
       {showMusic && <MusicSuggestions mood={todayMood} onClose={() => setShowMusic(false)} onPlay={() => {
@@ -495,7 +496,7 @@ export default function App() {
       )}
 
       {/* Chatbot */}
-      <ChatBot onEmergency={() => setShowContacts(true)} />
+      <ChatBot onEmergency={() => setShowContacts(true)} currentMood={todayMood} soulNoteContent={latestSoulNote} />
 
       {/* Background Music */}
       <audio
@@ -538,7 +539,10 @@ export default function App() {
                   </div>
                 </div>
                 <button
-                  onClick={() => setBgMusicEnabled(!bgMusicEnabled)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setBgMusicEnabled(prev => !prev);
+                  }}
                   className={`relative w-14 h-8 rounded-full transition-colors ${bgMusicEnabled ? 'bg-purple-600' : 'bg-gray-300'
                     }`}
                 >

@@ -1,27 +1,57 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, Send, X, Sparkles } from 'lucide-react';
 
-export function ChatBot({ onEmergency }: { onEmergency: () => void }) {
+interface ChatBotProps {
+  onEmergency: () => void;
+  currentMood?: string;
+  soulNoteContent?: string;
+}
+
+interface Message {
+  text: string;
+  isBot: boolean;
+}
+
+type QuestionType = 'breakfast' | 'lunch' | 'dinner' | 'mood' | 'none';
+
+export function ChatBot({ onEmergency, currentMood, soulNoteContent }: ChatBotProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Array<{ text: string; isBot: boolean }>>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [lastQuestion, setLastQuestion] = useState<QuestionType>('none');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Initialize with time-based greeting
     const hour = new Date().getHours();
-    let greeting = "Hi there! 👋 I'm here to support you. ";
+    let greeting = "Hi there, honey! 👋 I'm here to support you. ";
+    let question: QuestionType = 'none';
 
     if (hour < 12) {
       greeting += "Good morning! Did you have breakfast today? 🍳";
+      question = 'breakfast';
     } else if (hour < 18) {
       greeting += "Good afternoon! Have you had lunch yet? 🍽️";
+      question = 'lunch';
     } else {
       greeting += "Good evening! Did you have dinner? 🌙";
+      question = 'dinner';
+    }
+
+    // If mood is low, acknowledge it first
+    if (currentMood && ['Sad', 'Tired', 'Stressed', 'Anxious'].includes(currentMood)) {
+      greeting = `I noticed you're feeling ${currentMood.toLowerCase()} today, my dear. 💙 I'm here for you. ` + greeting;
+    }
+
+    // If there's a recent soul note, acknowledge it gently
+    if (soulNoteContent) {
+      // Simple sentiment analysis or keyword check could go here, but for now just acknowledge it
+      greeting = "I see you've been writing in your journal. It's good to let those thoughts out. 📔 " + greeting;
     }
 
     setMessages([{ text: greeting, isBot: true }]);
-  }, []);
+    setLastQuestion(question);
+  }, [currentMood, soulNoteContent]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -37,15 +67,15 @@ export function ChatBot({ onEmergency }: { onEmergency: () => void }) {
       "Awesome! Starting the day with food is so important for your energy and mood!",
     ],
     nobreakfast: [
-      "Oh, why did you skip breakfast? It's the most important meal of the day! 🍳 Please try to eat something small.",
-      "Is there a reason you didn't eat? Your body needs energy! Try to grab a quick snack if you can. 🍌",
+      "Oh honey, why did you skip breakfast? It's the most important meal of the day! 🍳 Please try to eat something small.",
+      "Is there a reason you didn't eat, my dear? Your body needs energy! Try to grab a quick snack if you can. 🍌",
     ],
     lunch: [
       "Wonderful! Taking time to eat is an act of self-care. Hope it was tasty! 🍱",
       "That's great! Proper nutrition helps with mood regulation. What did you enjoy?",
     ],
     nolunch: [
-      "Why didn't you have lunch? skipping meals can affect your mood. 🥗 Please eat something to fuel your body!",
+      "Why didn't you have lunch, sweetie? Skipping meals can affect your mood. 🥗 Please eat something to fuel your body!",
       "Oh no! Is everything okay? Try to take a break and eat something. You deserve to be nourished! 🥪",
     ],
     dinner: [
@@ -74,15 +104,15 @@ export function ChatBot({ onEmergency }: { onEmergency: () => void }) {
       "No worries! Would you like to talk about anything?",
     ],
     sad: [
-      "I'm sorry you're feeling down. Remember, it's okay to have difficult days. Would you like to try a breathing exercise?",
-      "Your feelings are valid. What's one small thing that might help you feel a bit better right now?",
+      "I'm sorry you're feeling down, honey. Remember, it's okay to have difficult days. Would you like to try a breathing exercise?",
+      "Your feelings are valid, my dear. What's one small thing that might help you feel a bit better right now?",
     ],
     happy: [
       "That's wonderful! I'm so glad you're feeling good! What's bringing you joy today? 😊",
       "Awesome! It's great to hear you're in a positive space. Keep that energy flowing!",
     ],
     stressed: [
-      "Stress can be tough. Remember to breathe. Have you tried the relaxing games in the app?",
+      "Stress can be tough. Remember to breathe, darling. Have you tried the relaxing games in the app?",
       "Let's take it one step at a time. What's the main thing on your mind right now?",
     ],
     anxious: [
@@ -90,7 +120,7 @@ export function ChatBot({ onEmergency }: { onEmergency: () => void }) {
       "I hear you. Sometimes when we're anxious, grounding techniques help. Can you name 5 things you can see around you?",
     ],
     default: [
-      "I'm here to listen. Tell me more about how you're feeling.",
+      "I'm here to listen, honey. Tell me more about how you're feeling.",
       "Thank you for sharing. Your mental health matters. What can I help you with today?",
       "I appreciate you opening up. Would you like to explore the mood tracker or journal features?",
     ],
@@ -118,20 +148,21 @@ export function ChatBot({ onEmergency }: { onEmergency: () => void }) {
       return responses.crisis[Math.floor(Math.random() * responses.crisis.length)];
     }
 
-    // Check for meal responses
-    if (lowercaseMessage.includes('yes') && lowercaseMessage.includes('breakfast')) {
-      return responses.breakfast[Math.floor(Math.random() * responses.breakfast.length)];
-    } else if (lowercaseMessage.includes('no') && lowercaseMessage.includes('breakfast')) {
-      return responses.nobreakfast[Math.floor(Math.random() * responses.nobreakfast.length)];
-    } else if (lowercaseMessage.includes('yes') && lowercaseMessage.includes('lunch')) {
-      return responses.lunch[Math.floor(Math.random() * responses.lunch.length)];
-    } else if (lowercaseMessage.includes('no') && lowercaseMessage.includes('lunch')) {
-      return responses.nolunch[Math.floor(Math.random() * responses.nolunch.length)];
-    } else if (lowercaseMessage.includes('yes') && lowercaseMessage.includes('dinner')) {
-      return responses.dinner[Math.floor(Math.random() * responses.dinner.length)];
-    } else if (lowercaseMessage.includes('no') && lowercaseMessage.includes('dinner')) {
-      return responses.nodinner[Math.floor(Math.random() * responses.nodinner.length)];
-    } else if (lowercaseMessage.includes('fun fact') || lowercaseMessage.includes('fact') || lowercaseMessage.includes('tell me something')) {
+    // Context-aware responses for "yes" and "no"
+    if (lastQuestion !== 'none') {
+      if (['yes', 'yeah', 'yep', 'sure'].some(w => lowercaseMessage.includes(w))) {
+        const response = responses[lastQuestion][Math.floor(Math.random() * responses[lastQuestion].length)];
+        setLastQuestion('none'); // Reset context
+        return response;
+      } else if (['no', 'nah', 'nope'].some(w => lowercaseMessage.includes(w))) {
+        const response = responses[`no${lastQuestion}`][Math.floor(Math.random() * responses[`no${lastQuestion}`].length)];
+        setLastQuestion('none'); // Reset context
+        return response;
+      }
+    }
+
+    // General keyword matching
+    if (lowercaseMessage.includes('fun fact') || lowercaseMessage.includes('fact') || lowercaseMessage.includes('tell me something')) {
       return responses.funfact[Math.floor(Math.random() * responses.funfact.length)];
     } else if (lowercaseMessage.includes('sad') || lowercaseMessage.includes('down') || lowercaseMessage.includes('depressed')) {
       return responses.sad[Math.floor(Math.random() * responses.sad.length)];
@@ -141,10 +172,6 @@ export function ChatBot({ onEmergency }: { onEmergency: () => void }) {
       return responses.stressed[Math.floor(Math.random() * responses.stressed.length)];
     } else if (lowercaseMessage.includes('anxious') || lowercaseMessage.includes('anxiety') || lowercaseMessage.includes('worry')) {
       return responses.anxious[Math.floor(Math.random() * responses.anxious.length)];
-    } else if (lowercaseMessage === 'yes' || lowercaseMessage === 'yeah' || lowercaseMessage === 'yep') {
-      return responses.yes[Math.floor(Math.random() * responses.yes.length)];
-    } else if (lowercaseMessage === 'no' || lowercaseMessage === 'nah' || lowercaseMessage === 'nope') {
-      return responses.no[Math.floor(Math.random() * responses.no.length)];
     } else {
       return responses.default[Math.floor(Math.random() * responses.default.length)];
     }
