@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Smile, Meh, Frown, Sun, Cloud, CloudRain, Heart, Coffee, Zap } from 'lucide-react';
 
 interface DailyCheckInProps {
-  onComplete: (data: { mood: string; emoji: string; answers: Record<string, string> }) => void;
+  onComplete: (data: { mood: string; emoji: string; answers: Record<string, string>; moodScore: number }) => void;
   onClose: () => void;
 }
 
@@ -10,14 +10,15 @@ export function DailyCheckIn({ onComplete, onClose }: DailyCheckInProps) {
   const [step, setStep] = useState(1);
   const [mood, setMood] = useState('');
   const [emoji, setEmoji] = useState('');
+  const [moodScore, setMoodScore] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
   const moods = [
-    { id: 'amazing', label: 'Amazing!', emoji: '🌟', icon: Zap, color: 'bg-yellow-400' },
-    { id: 'good', label: 'Pretty Good', emoji: '😊', icon: Smile, color: 'bg-green-400' },
-    { id: 'okay', label: 'Okay', emoji: '😐', icon: Meh, color: 'bg-blue-400' },
-    { id: 'stressed', label: 'Stressed', emoji: '😰', icon: Cloud, color: 'bg-orange-400' },
-    { id: 'sad', label: 'Not Great', emoji: '😢', icon: Frown, color: 'bg-purple-400' },
+    { id: 'amazing', label: 'Amazing!', emoji: '🌟', icon: Zap, color: 'bg-yellow-400', score: 5 },
+    { id: 'good', label: 'Pretty Good', emoji: '😊', icon: Smile, color: 'bg-green-400', score: 4 },
+    { id: 'okay', label: 'Okay', emoji: '😐', icon: Meh, color: 'bg-blue-400', score: 3 },
+    { id: 'stressed', label: 'Stressed', emoji: '😰', icon: Cloud, color: 'bg-orange-400', score: 2 },
+    { id: 'sad', label: 'Not Great', emoji: '😢', icon: Frown, color: 'bg-purple-400', score: 1 },
   ];
 
   const questions = [
@@ -41,6 +42,7 @@ export function DailyCheckIn({ onComplete, onClose }: DailyCheckInProps) {
   const handleMoodSelect = (moodData: typeof moods[0]) => {
     setMood(moodData.id);
     setEmoji(moodData.emoji);
+    setMoodScore(moodData.score);
     setStep(2);
   };
 
@@ -55,7 +57,7 @@ export function DailyCheckIn({ onComplete, onClose }: DailyCheckInProps) {
     } else {
       // All questions answered
       setTimeout(() => {
-        onComplete({ mood, emoji, answers: newAnswers });
+        onComplete({ mood, emoji, answers: newAnswers, moodScore });
       }, 300);
     }
   };

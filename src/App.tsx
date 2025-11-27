@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { SignUp } from './components/SignUp';
+import { SignIn } from './components/SignIn';
 import { GenderSelection } from './components/GenderSelection';
 import { DailyCheckIn } from './components/DailyCheckIn';
 import { ChatBot } from './components/ChatBot';
@@ -10,30 +12,37 @@ import { EmergencyContacts } from './components/EmergencyContacts';
 import { MusicSuggestions } from './components/MusicSuggestions';
 import { RelaxingGames } from './components/RelaxingGames';
 import { PeriodTracker } from './components/PeriodTracker';
-import {
-  Zap,
-  BookOpen,
-  Users,
-  Phone,
-  Music,
-  Gamepad2,
-  Calendar,
+import { MoodGraph } from './components/MoodGraph';
+import { MedicineTracker } from './components/MedicineTracker';
+import { 
+  Zap, 
+  BookOpen, 
+  Users, 
+  Phone, 
+  Music, 
+  Gamepad2, 
+  Calendar, 
   Flame,
   Sparkles,
   Heart,
   Smile,
-  TrendingUp
+  TrendingUp,
+  Pill,
+  LogOut
 } from 'lucide-react';
-import { api } from './utils/api';
+import { projectId, publicAnonKey } from './utils/supabase/info';
 
 export default function App() {
-  const [phase, setPhase] = useState<'welcome' | 'gender' | 'main'>('welcome');
+  const [phase, setPhase] = useState<'welcome' | 'auth' | 'gender' | 'main'>('welcome');
+  const [authMode, setAuthMode] = useState<'signin' | 'signup'>('signin');
   const [userId, setUserId] = useState('');
   const [userName, setUserName] = useState('');
   const [userGender, setUserGender] = useState<'male' | 'female'>('female');
+  const [accessToken, setAccessToken] = useState('');
   const [streak, setStreak] = useState(0);
   const [todayMood, setTodayMood] = useState('');
-
+  const [isCheckingSession, setIsCheckingSession] = useState(true);
+  
   // Modal states
   const [showCheckIn, setShowCheckIn] = useState(false);
   const [showUplift, setShowUplift] = useState(false);
@@ -43,43 +52,96 @@ export default function App() {
   const [showMusic, setShowMusic] = useState(false);
   const [showGames, setShowGames] = useState(false);
   const [showPeriodTracker, setShowPeriodTracker] = useState(false);
+  const [showMedicineTracker, setShowMedicineTracker] = useState(false);
 
   useEffect(() => {
-    // Check for persisted session
-    const storedUserId = localStorage.getItem('moodglow_userId');
-    const storedUserName = localStorage.getItem('moodglow_userName');
-    const storedUserGender = localStorage.getItem('moodglow_userGender') as 'male' | 'female';
-
-    if (storedUserId && storedUserName) {
-      setUserId(storedUserId);
-      setUserName(storedUserName);
-      if (storedUserGender) setUserGender(storedUserGender);
-      setPhase('main');
-    }
+    // Check for existing session on load
+    checkExistingSession();
   }, []);
 
   useEffect(() => {
     if (phase === 'main' && userId) {
       loadStreak();
       checkTodayCheckIn();
+      loadUserProfile();
     }
   }, [phase, userId]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('moodglow_userId');
-    localStorage.removeItem('moodglow_userName');
-    localStorage.removeItem('moodglow_userGender');
-    setUserId('');
-    setUserName('');
-    setPhase('welcome');
-    setStreak(0);
-    setTodayMood('');
+  const checkExistingSession = async () => {
+    try {
+      const storedToken = localStorage.getItem('moodglow_token');
+      const storedUserId = localStorage.getItem('moodglow_userId');
+
+      if (storedToken && storedUserId) {
+        // Verify the session is still valid
+        const response = await fetch(
+          `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/verify-session`,
+          {
+            headers: {
+              Authorization: `Bearer ${storedToken}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setAccessToken(storedToken);
+          setUserId(data.userId);
+          setUserName(data.name);
+          setPhase('main');
+        } else {
+          // Session expired, clear storage
+          localStorage.removeItem('moodglow_token');
+          localStorage.removeItem('moodglow_userId');
+        }
+      }
+    } catch (error) {
+      console.error('Error checking session:', error);
+    } finally {
+      setIsCheckingSession(false);
+    }
+  };
+
+  const loadUserProfile = async () => {
+    try {
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/profile/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.profile?.gender) {
+          setUserGender(data.profile.gender);
+        }
+        if (data.profile?.name) {
+          setUserName(data.profile.name);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading profile:', error);
+    }
   };
 
   const loadStreak = async () => {
     try {
-      const data = await api.getStreak(userId);
-      setStreak(data.streak?.current || 0);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/streak/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+          },
+        }
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        setStreak(data.streak?.current || 0);
+      }
     } catch (error) {
       console.error('Error loading streak:', error);
     }
@@ -87,55 +149,68 @@ export default function App() {
 
   const checkTodayCheckIn = async () => {
     try {
-      const data = await api.getCheckins(userId);
-      const today = new Date().toISOString().split('T')[0];
-      const todayCheckIn = data.checkins?.find((c: any) => c.date === today);
+      const response = await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/checkins/${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+          },
+        }
+      );
 
-      if (todayCheckIn) {
-        setTodayMood(todayCheckIn.emoji || '');
+      if (response.ok) {
+        const data = await response.json();
+        const today = new Date().toISOString().split('T')[0];
+        const todayCheckIn = data.checkins?.find((c: any) => c.date === today);
+        
+        if (todayCheckIn) {
+          setTodayMood(todayCheckIn.emoji || '');
+        }
       }
     } catch (error) {
       console.error('Error checking today check-in:', error);
     }
   };
 
-  const handleAuth = async (data: { name: string; password?: string; gender?: 'male' | 'female'; isLogin: boolean }) => {
-    const { name, password, gender, isLogin } = data;
+  const handleGenderSelection = async (gender: 'male' | 'female', name: string) => {
+    const newUserId = `user_${Date.now()}`;
+    setUserId(newUserId);
+    setUserName(name);
+    setUserGender(gender);
 
-    if (isLogin) {
-      // Login
-      const result = await api.login(name, password || '');
-      const { profile } = result;
-
-      setUserId(profile.userId);
-      setUserName(profile.name);
-      setUserGender(profile.gender as 'male' | 'female');
-
-      // Persist session
-      localStorage.setItem('moodglow_userId', profile.userId);
-      localStorage.setItem('moodglow_userName', profile.name);
-      localStorage.setItem('moodglow_userGender', profile.gender);
-    } else {
-      // Signup
-      const newUserId = `user_${Date.now()}`;
-      await api.signup(newUserId, name, password || '', gender || 'not-specified');
-
-      setUserId(newUserId);
-      setUserName(name);
-      if (gender) setUserGender(gender);
-
-      // Persist session
-      localStorage.setItem('moodglow_userId', newUserId);
-      localStorage.setItem('moodglow_userName', name);
-      if (gender) localStorage.setItem('moodglow_userGender', gender);
+    try {
+      await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/profile`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+          },
+          body: JSON.stringify({ userId: newUserId, gender, name }),
+        }
+      );
+    } catch (error) {
+      console.error('Error creating profile:', error);
     }
 
     setPhase('main');
   };
 
-  const handleCheckInComplete = async (data: { mood: string; emoji: string; answers: Record<string, string> }) => {
+  const handleCheckInComplete = async (data: { mood: string; emoji: string; answers: Record<string, string>; moodScore: number }) => {
     try {
-      await api.saveCheckin(userId, data);
+      await fetch(
+        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/checkin`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${accessToken || publicAnonKey}`,
+          },
+          body: JSON.stringify({ userId, ...data }),
+        }
+      );
+
       setTodayMood(data.emoji);
       await loadStreak();
       setShowCheckIn(false);
@@ -144,14 +219,53 @@ export default function App() {
     }
   };
 
+  const handleAuthComplete = async (data: { userId: string; name: string; token: string }) => {
+    setAccessToken(data.token);
+    setUserId(data.userId);
+    setUserName(data.name);
+    localStorage.setItem('moodglow_token', data.token);
+    localStorage.setItem('moodglow_userId', data.userId);
+    setPhase('main');
+  };
+
+  const handleLogout = () => {
+    setAccessToken('');
+    setUserId('');
+    setUserName('');
+    localStorage.removeItem('moodglow_token');
+    localStorage.removeItem('moodglow_userId');
+    setPhase('welcome');
+  };
+
+  // Show loading while checking session
+  if (isCheckingSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-400 via-pink-300 to-blue-300 flex items-center justify-center">
+        <div className="text-center">
+          <Sparkles className="w-16 h-16 text-white animate-bounce mx-auto mb-4" />
+          <p className="text-white text-xl">Loading MoodGlow...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === 'welcome') {
-    return <WelcomeScreen onComplete={() => setPhase('gender')} />;
+    return <WelcomeScreen onComplete={() => setPhase('auth')} />;
+  }
+
+  if (phase === 'auth') {
+    if (authMode === 'signin') {
+      return <SignIn onComplete={handleAuthComplete} onSwitch={() => setAuthMode('signup')} />;
+    } else {
+      return <SignUp onComplete={handleAuthComplete} onSwitch={() => setAuthMode('signin')} />;
+    }
   }
 
   if (phase === 'gender') {
-    return <GenderSelection onComplete={handleAuth} />;
+    return <GenderSelection onComplete={handleGenderSelection} />;
   }
 
+  // Main app
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
       {/* Header */}
@@ -180,9 +294,9 @@ export default function App() {
             )}
             <button
               onClick={handleLogout}
-              className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+              className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-colors"
             >
-              Logout
+              <LogOut className="w-5 h-5" />
             </button>
           </div>
         </div>
@@ -287,6 +401,33 @@ export default function App() {
           </div>
         )}
 
+        {/* Medicine Tracker */}
+        <div className="mb-8">
+          <h2 className="text-2xl mb-4 text-gray-800">Health Management</h2>
+          <button
+            onClick={() => setShowMedicineTracker(true)}
+            className="w-full bg-gradient-to-br from-cyan-400 to-blue-500 text-white p-6 rounded-2xl hover:scale-105 transition-transform shadow-lg flex items-center justify-between"
+          >
+            <div className="flex items-center gap-4">
+              <Pill className="w-10 h-10" />
+              <div className="text-left">
+                <h3 className="text-xl mb-1">Medicine Tracker</h3>
+                <p className="text-sm text-cyan-100">Track your medications and stay on schedule</p>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        {/* Mood Graph */}
+        <div className="mb-8">
+          <h2 className="text-2xl mb-4 text-gray-800">Mood Insights</h2>
+          <MoodGraph 
+            userId={userId} 
+            onCallFriend={() => setShowContacts(true)}
+            onCallTherapist={() => setShowEmpathy(true)}
+          />
+        </div>
+
         {/* Inspirational Quote */}
         <div className="bg-gradient-to-r from-indigo-100 to-purple-100 rounded-2xl p-8 text-center border border-indigo-200">
           <Heart className="w-12 h-12 text-purple-600 mx-auto mb-4" />
@@ -312,6 +453,9 @@ export default function App() {
       {showGames && <RelaxingGames onClose={() => setShowGames(false)} />}
       {showPeriodTracker && userGender === 'female' && (
         <PeriodTracker userId={userId} onClose={() => setShowPeriodTracker(false)} />
+      )}
+      {showMedicineTracker && (
+        <MedicineTracker userId={userId} onClose={() => setShowMedicineTracker(false)} />
       )}
 
       {/* Chatbot */}
