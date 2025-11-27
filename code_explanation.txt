@@ -1,0 +1,103 @@
+# Codebase Explanation
+
+This document provides an overview of the files and directories in the Interactive Mental Health Tracker project.
+
+## Root Directory
+
+- **README.md**: Contains general information about the project, including how to run it.
+- **package.json**: Defines the project's metadata, scripts (dev, build), and dependencies (React, Vite, Tailwind, Radix UI, Supabase, etc.).
+- **vite.config.ts**: Configuration file for Vite, handling plugins (React) and path aliases.
+- **index.html**: The main HTML entry point for the application.
+- **.npmrc**: Configuration file for npm.
+
+## src Directory
+
+- **main.tsx**: The entry point for the React application. It renders the `App` component into the DOM.
+- **App.tsx**: The main component that orchestrates the application. It manages the application state (authentication, user profile, current phase) and renders the appropriate screens (Welcome, Auth, Gender Selection, Main Dashboard). It also handles the display of various feature modals.
+- **index.css**: Global CSS file, including Tailwind CSS directives and custom styles.
+- **Attributions.md**: A file listing attributions for resources used in the project.
+- **utils/supabase/info.tsx**: Contains Supabase configuration constants (Project ID and Public Anon Key).
+
+## src/components
+
+This directory contains the functional components of the application.
+
+- **ChatBot.tsx**: Implements a supportive chatbot. It provides predefined responses based on user input (keywords like "breakfast", "sad", "stressed") and offers a conversational interface.
+- **DailyCheckIn.tsx**: A modal component for users to log their daily mood, sleep quality, energy levels, and gratitude. It calculates a mood score.
+- **DailyUplift.tsx**: Displays a sequence of positive affirmations to the user.
+- **EmergencyContacts.tsx**: Manages a list of personal emergency contacts and displays national crisis helplines. Allows adding, deleting, and calling contacts.
+- **EmpathyPillar.tsx**: A hub for social support. It features tabs for "Pillar Peers" (community groups) and "Therapists" (professional help), allowing users to join groups or book sessions.
+- **GenderSelection.tsx**: An onboarding screen where users enter their name and select their gender identity. This information is used to personalize the experience (e.g., showing the Period Tracker).
+- **MedicineTracker.tsx**: Allows users to track their medications. Users can add medicines with dosage, frequency, and times. It also allows logging when medicine is taken.
+- **MoodGraph.tsx**: Visualizes the user's mood history over the last 7 days using a bar chart. It also provides recommendations (call a friend or therapist) based on mood patterns.
+- **MusicSuggestions.tsx**: Suggests curated music playlists based on the user's current mood (Happy, Sad, Stressed, Anxious).
+- **PeriodTracker.tsx**: A tracker for menstrual cycles. It allows logging period dates and symptoms, and predicts the next period. Only shown to users who identify as female.
+- **RelaxingGames.tsx**: A collection of mini-games designed to help with relaxation:
+    - *Breathing Circle*: A visual guide for breathing exercises.
+    - *Pop the Bubbles*: A simple interactive game to pop bubbles.
+    - *Mindful Coloring*: A grid-based coloring activity.
+- **SignIn.tsx**: A form for existing users to sign in using their email and password. Handles authentication via Supabase.
+- **SignUp.tsx**: A form for new users to create an account. Handles user registration via Supabase.
+- **SoulNotes.tsx**: A password-protected personal journal. Users can write and save entries, which are stored securely.
+- **WelcomeScreen.tsx**: The initial landing screen. It features a fun "pop the balloons" game to engage the user before entering the app.
+
+## src/components/ui
+
+This directory contains reusable UI components built with Radix UI and styled with Tailwind CSS (likely using `shadcn/ui`). These components are used throughout the application for consistent design.
+
+- **accordion.tsx**: Accordion component.
+- **alert-dialog.tsx**: Modal dialog for alerts.
+- **alert.tsx**: Alert message component.
+- **aspect-ratio.tsx**: Aspect ratio container.
+- **avatar.tsx**: User avatar component.
+- **badge.tsx**: Small status badge.
+- **breadcrumb.tsx**: Breadcrumb navigation.
+- **button.tsx**: Standard button component.
+- **calendar.tsx**: Calendar picker.
+- **card.tsx**: Card container.
+- **carousel.tsx**: Image/Content carousel.
+- **chart.tsx**: Charting components (using Recharts).
+- **checkbox.tsx**: Checkbox input.
+- **collapsible.tsx**: Collapsible content section.
+- **command.tsx**: Command palette interface.
+- **context-menu.tsx**: Right-click context menu.
+- **dialog.tsx**: Standard modal dialog.
+- **drawer.tsx**: Slide-out drawer.
+- **dropdown-menu.tsx**: Dropdown menu.
+- **form.tsx**: Form building components (using react-hook-form).
+- **hover-card.tsx**: Card that appears on hover.
+- **input-otp.tsx**: One-time password input.
+- **input.tsx**: Text input field.
+- **label.tsx**: Form label.
+- **menubar.tsx**: Menu bar component.
+- **navigation-menu.tsx**: Navigation menu.
+- **pagination.tsx**: Pagination controls.
+- **popover.tsx**: Popover content.
+- **progress.tsx**: Progress bar.
+- **radio-group.tsx**: Radio button group.
+- **resizable.tsx**: Resizable panel layouts.
+- **scroll-area.tsx**: Custom scrollable area.
+- **select.tsx**: Select dropdown.
+- **separator.tsx**: Visual separator line.
+- **sheet.tsx**: Side sheet/drawer.
+- **sidebar.tsx**: Sidebar navigation.
+- **skeleton.tsx**: Loading skeleton state.
+- **slider.tsx**: Range slider.
+- **sonner.tsx**: Toast notification provider.
+- **switch.tsx**: Toggle switch.
+- **table.tsx**: Data table.
+- **tabs.tsx**: Tabbed interface.
+- **textarea.tsx**: Multi-line text input.
+- **toggle-group.tsx**: Group of toggle buttons.
+- **toggle.tsx**: Toggle button.
+- **tooltip.tsx**: Tooltip popup.
+- **use-mobile.ts**: Hook for detecting mobile devices.
+- **utils.ts**: Utility functions for class name merging (cn).
+
+## src/styles
+
+- **(Directory)**: Likely contains additional style configurations or modules if present.
+
+## src/supabase
+
+- **functions/**: Contains Supabase Edge Functions (server-side logic) for backend operations like authentication, profile management, and data persistence.
