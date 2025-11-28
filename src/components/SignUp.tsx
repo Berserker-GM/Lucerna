@@ -106,7 +106,7 @@ export function SignUp({ onComplete, onSwitch }: SignUpProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
       <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full">
         <div className="text-center mb-8">
           <div className="flex justify-center mb-4">
@@ -248,7 +248,7 @@ export function SignUp({ onComplete, onSwitch }: SignUpProps) {
         </form>
 
         {/* Switch to Sign In */}
-        <div className="mt-6 text-center">
+        <div className="mt-6 text-center relative z-10">
           <p className="text-gray-600">
             Already have an account?{' '}
             <button
