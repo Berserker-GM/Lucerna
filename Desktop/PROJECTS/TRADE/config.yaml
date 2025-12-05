@@ -1,0 +1,224 @@
+# AI Stock Prediction System Configuration
+
+# Data Collection
+data:
+  # Stock universe
+  universe:
+    - "sp500"  # S&P 500 stocks
+    - "nasdaq100"  # NASDAQ 100 stocks
+    # Add custom tickers: ["AAPL", "GOOGL", "MSFT", ...]
+  
+  # Data sources (priority order)
+  sources:
+    primary: "yfinance"  # yfinance, alphavantage, polygon
+    backup: "alphavantage"
+  
+  # Historical data range
+  history:
+    start_date: "2010-01-01"
+    end_date: null  # null = today
+  
+  # Update frequency
+  update:
+    interval: "1d"  # 1d, 1h, 15m, 5m, 1m
+    auto_update: true
+    update_time: "18:00"  # Market close + buffer
+
+# Feature Engineering
+features:
+  # Technical indicators
+  technical:
+    - "SMA"  # Simple Moving Average
+    - "EMA"  # Exponential Moving Average
+    - "RSI"  # Relative Strength Index
+    - "MACD"  # Moving Average Convergence Divergence
+    - "BB"  # Bollinger Bands
+    - "ATR"  # Average True Range
+    - "ADX"  # Average Directional Index
+    - "OBV"  # On-Balance Volume
+    - "VWAP"  # Volume Weighted Average Price
+    - "Stochastic"
+    - "CCI"  # Commodity Channel Index
+    - "Williams_R"
+    - "MFI"  # Money Flow Index
+  
+  # Timeframes for multi-scale features
+  timeframes:
+    - 5
+    - 10
+    - 20
+    - 50
+    - 100
+    - 200
+  
+  # Derived features
+  derived:
+    returns: true
+    log_returns: true
+    volatility: true
+    momentum: true
+    volume_features: true
+
+# Model Configuration
+models:
+  # LSTM Configuration
+  lstm:
+    enabled: true
+    sequence_length: 60  # Look back 60 days
+    hidden_size: 128
+    num_layers: 3
+    dropout: 0.2
+    bidirectional: true
+  
+  # Transformer Configuration
+  transformer:
+    enabled: true
+    d_model: 128
+    nhead: 8
+    num_layers: 4
+    dim_feedforward: 512
+    dropout: 0.1
+  
+  # CNN-LSTM Hybrid
+  cnn_lstm:
+    enabled: true
+    cnn_filters: [64, 128, 256]
+    kernel_sizes: [3, 5, 7]
+    lstm_hidden: 128
+    lstm_layers: 2
+  
+  # Ensemble
+  ensemble:
+    enabled: true
+    method: "weighted_average"  # weighted_average, stacking, voting
+    weights: "auto"  # auto or [0.3, 0.3, 0.4]
+
+# Prediction Configuration
+prediction:
+  # Forecast horizon
+  horizons:
+    - 1   # 1 day ahead
+    - 5   # 1 week ahead
+    - 10  # 2 weeks ahead
+    - 20  # 1 month ahead
+    - 30  # 1.5 months ahead
+  
+  # Confidence intervals
+  confidence_levels:
+    - 0.68  # 1 sigma
+    - 0.95  # 2 sigma
+    - 0.99  # 3 sigma
+  
+  # Monte Carlo simulation
+  monte_carlo:
+    enabled: true
+    num_simulations: 1000
+    scenarios: ["bull", "base", "bear"]
+
+# Training Configuration
+training:
+  # Train/validation/test split
+  split:
+    train: 0.7
+    validation: 0.15
+    test: 0.15
+  
+  # Training parameters
+  batch_size: 64
+  epochs: 100
+  learning_rate: 0.001
+  optimizer: "adam"  # adam, adamw, sgd
+  
+  # Early stopping
+  early_stopping:
+    enabled: true
+    patience: 10
+    min_delta: 0.0001
+  
+  # Hardware
+  device: "cuda"  # cuda, cpu, mps (for Mac M1/M2)
+  mixed_precision: true
+  
+  # Hyperparameter optimization
+  hpo:
+    enabled: false
+    trials: 50
+    method: "optuna"  # optuna, ray
+
+# Storage Configuration
+storage:
+  # Database
+  database:
+    type: "sqlite"  # sqlite, postgresql, mysql
+    path: "data/stocks.db"
+    # For PostgreSQL/MySQL:
+    # host: "localhost"
+    # port: 5432
+    # username: "user"
+    # password: "pass"
+    # database: "stocks"
+  
+  # Time-series data
+  timeseries:
+    format: "parquet"  # parquet, hdf5, csv
+    path: "data/timeseries/"
+    compression: "snappy"
+  
+  # Model checkpoints
+  models:
+    path: "models/checkpoints/"
+    save_best_only: true
+    save_frequency: 5  # epochs
+
+# API Configuration
+api:
+  host: "0.0.0.0"
+  port: 8000
+  reload: true
+  workers: 4
+  
+  # CORS
+  cors:
+    enabled: true
+    origins:
+      - "http://localhost:3000"
+      - "http://localhost:5173"
+  
+  # Rate limiting
+  rate_limit:
+    enabled: true
+    requests_per_minute: 60
+  
+  # Caching
+  cache:
+    enabled: true
+    backend: "redis"  # redis, memory
+    ttl: 300  # seconds
+
+# Monitoring & Logging
+monitoring:
+  # MLflow tracking
+  mlflow:
+    enabled: true
+    tracking_uri: "http://localhost:5000"
+    experiment_name: "stock_prediction"
+  
+  # Logging
+  logging:
+    level: "INFO"  # DEBUG, INFO, WARNING, ERROR
+    file: "logs/app.log"
+    rotation: "1 day"
+    retention: "30 days"
+  
+  # Metrics
+  metrics:
+    track_predictions: true
+    track_performance: true
+    alert_threshold: 0.1  # Alert if accuracy drops below 10%
+
+# Retraining
+retraining:
+  enabled: true
+  schedule: "weekly"  # daily, weekly, monthly
+  trigger_on_drift: true
+  min_accuracy: 0.6  # Retrain if accuracy < 60%
