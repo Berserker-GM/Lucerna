@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpen, Lock, Plus, Calendar } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { api } from '../utils/api';
 
 interface SoulNotesProps {
   userId: string;
@@ -28,23 +28,7 @@ export function SoulNotes({ userId, onClose, onLatestNote }: SoulNotesProps) {
   const loadEntries = async (pwd: string) => {
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/journal/list`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ userId, password: pwd }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to load entries');
-      }
-
-      const data = await response.json();
+      const data = await api.getJournalEntries({ userId, password: pwd });
       const loadedEntries = data.entries || [];
       setEntries(loadedEntries);
 
@@ -83,26 +67,12 @@ export function SoulNotes({ userId, onClose, onLatestNote }: SoulNotesProps) {
 
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/journal`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({
-            userId,
-            title: newEntry.title || 'Untitled',
-            content: newEntry.content,
-            password: savedPassword,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to save entry');
-      }
+      await api.saveJournalEntry({
+        userId,
+        title: newEntry.title || 'Untitled',
+        content: newEntry.content,
+        password: savedPassword,
+      });
 
       // Reload entries
       await loadEntries(savedPassword);

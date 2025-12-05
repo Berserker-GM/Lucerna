@@ -34,7 +34,7 @@ import {
   VolumeX,
   Settings
 } from 'lucide-react';
-import { projectId, publicAnonKey } from './utils/supabase/info';
+import { api } from './utils/api';
 
 export default function App() {
   const [phase, setPhase] = useState<'welcome' | 'auth' | 'gender' | 'main'>('welcome');
@@ -104,22 +104,13 @@ export default function App() {
 
       if (storedToken && storedUserId) {
         // Verify the session is still valid
-        const response = await fetch(
-          `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/verify-session`,
-          {
-            headers: {
-              Authorization: `Bearer ${storedToken}`,
-            },
-          }
-        );
-
-        if (response.ok) {
-          const data = await response.json();
+        try {
+          const data = await api.verifySession(storedToken);
           setAccessToken(storedToken);
           setUserId(data.userId);
           setUserName(data.name);
           setPhase('main');
-        } else {
+        } catch (error) {
           // Session expired, clear storage
           localStorage.removeItem('lucerna_token');
           localStorage.removeItem('lucerna_userId');
@@ -134,21 +125,12 @@ export default function App() {
 
   const loadUserProfile = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/profile/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.profile?.gender) {
+      const data = await api.getUserProfile(userId);
+      if (data.profile) {
+        if (data.profile.gender) {
           setUserGender(data.profile.gender);
         }
-        if (data.profile?.name) {
+        if (data.profile.name) {
           setUserName(data.profile.name);
         }
       }
@@ -159,19 +141,8 @@ export default function App() {
 
   const loadStreak = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/streak/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setStreak(data.streak?.current || 0);
-      }
+      const data = await api.getStreak(userId);
+      setStreak(data.streak?.current || 0);
     } catch (error) {
       console.error('Error loading streak:', error);
     }
@@ -179,23 +150,12 @@ export default function App() {
 
   const checkTodayCheckIn = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/checkins/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
-          },
-        }
-      );
+      const data = await api.getCheckIns(userId);
+      const today = new Date().toISOString().split('T')[0];
+      const todayCheckIn = data.checkins?.find((c: any) => c.date === today);
 
-      if (response.ok) {
-        const data = await response.json();
-        const today = new Date().toISOString().split('T')[0];
-        const todayCheckIn = data.checkins?.find((c: any) => c.date === today);
-
-        if (todayCheckIn) {
-          setTodayMood(todayCheckIn.emoji || '');
-        }
+      if (todayCheckIn) {
+        setTodayMood(todayCheckIn.emoji || '');
       }
     } catch (error) {
       console.error('Error checking today check-in:', error);
@@ -209,17 +169,7 @@ export default function App() {
     setUserGender(gender);
 
     try {
-      await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/profile`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
-          },
-          body: JSON.stringify({ userId: newUserId, gender, name }),
-        }
-      );
+      await api.saveProfile({ userId: newUserId, gender, name });
     } catch (error) {
       console.error('Error creating profile:', error);
     }
@@ -229,17 +179,7 @@ export default function App() {
 
   const handleCheckInComplete = async (data: { mood: string; emoji: string; answers: Record<string, string>; moodScore: number }) => {
     try {
-      await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/checkin`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken || publicAnonKey}`,
-          },
-          body: JSON.stringify({ userId, ...data }),
-        }
-      );
+      await api.saveCheckIn({ userId, ...data });
 
       setTodayMood(data.emoji);
       await loadStreak();

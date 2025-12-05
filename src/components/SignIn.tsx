@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LogIn, Mail, Lock, Sparkles } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { api } from '../utils/api';
 
 interface SignInProps {
   onComplete: (data: { userId: string; name: string; token: string }) => void;
@@ -32,23 +32,7 @@ export function SignIn({ onComplete, onSwitch }: SignInProps) {
       setIsLoading(true);
 
       // Call backend to sign in
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/signin`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ email, password }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to sign in');
-      }
+      const data = await api.signIn({ email, password });
 
       // Success!
       onComplete({ userId: data.userId, name: data.name, token: data.accessToken });

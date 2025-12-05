@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Pill, Plus, Check, Clock, Trash2, Bell } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { api } from '../utils/api';
 
 interface MedicineTrackerProps {
   userId: string;
@@ -56,19 +56,8 @@ export function MedicineTracker({ userId, onClose }: MedicineTrackerProps) {
   const loadMedicines = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/medicines/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setMedicines(data.medicines || []);
-      }
+      const data = await api.getMedicines(userId);
+      setMedicines(data.medicines || []);
     } catch (error) {
       console.error('Error loading medicines:', error);
     } finally {
@@ -78,19 +67,8 @@ export function MedicineTracker({ userId, onClose }: MedicineTrackerProps) {
 
   const loadLogs = async () => {
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/medicine-logs/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        setLogs(data.logs || []);
-      }
+      const data = await api.getMedicineLogs(userId);
+      setLogs(data.logs || []);
     } catch (error) {
       console.error('Error loading logs:', error);
     }
@@ -104,25 +82,11 @@ export function MedicineTracker({ userId, onClose }: MedicineTrackerProps) {
 
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/medicines`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({
-            userId,
-            ...newMedicine,
-            startDate: new Date().toISOString().split('T')[0],
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to save medicine');
-      }
+      await api.saveMedicine({
+        userId,
+        ...newMedicine,
+        startDate: new Date().toISOString().split('T')[0],
+      });
 
       await loadMedicines();
       setIsAdding(false);
@@ -137,32 +101,20 @@ export function MedicineTracker({ userId, onClose }: MedicineTrackerProps) {
 
   const handleTakeMedicine = async (medicine: Medicine, time: string) => {
     const today = new Date().toISOString().split('T')[0];
-    
-    try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/medicine-logs`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({
-            userId,
-            medicineId: medicine.id,
-            date: today,
-            time,
-            taken: true,
-          }),
-        }
-      );
 
-      if (response.ok) {
-        await loadLogs();
-        // Show motivational message
-        const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
-        alert(randomMessage);
-      }
+    try {
+      await api.saveMedicineLog({
+        userId,
+        medicineId: medicine.id,
+        date: today,
+        time,
+        taken: true,
+      });
+
+      await loadLogs();
+      // Show motivational message
+      const randomMessage = motivationalMessages[Math.floor(Math.random() * motivationalMessages.length)];
+      alert(randomMessage);
     } catch (error) {
       console.error('Error logging medicine:', error);
     }
@@ -170,10 +122,10 @@ export function MedicineTracker({ userId, onClose }: MedicineTrackerProps) {
 
   const isTakenToday = (medicineId: string, time: string) => {
     const today = new Date().toISOString().split('T')[0];
-    return logs.some((log) => 
-      log.medicineId === medicineId && 
-      log.date === today && 
-      log.time === time && 
+    return logs.some((log) =>
+      log.medicineId === medicineId &&
+      log.date === today &&
+      log.time === time &&
       log.taken
     );
   };
@@ -182,19 +134,8 @@ export function MedicineTracker({ userId, onClose }: MedicineTrackerProps) {
     if (!confirm('Are you sure you want to delete this medicine?')) return;
 
     try {
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/medicines/${medicineId}`,
-        {
-          method: 'DELETE',
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-
-      if (response.ok) {
-        await loadMedicines();
-      }
+      await api.deleteMedicine(medicineId, userId);
+      await loadMedicines();
     } catch (error) {
       console.error('Error deleting medicine:', error);
     }
@@ -393,11 +334,10 @@ export function MedicineTracker({ userId, onClose }: MedicineTrackerProps) {
                             key={index}
                             onClick={() => !taken && handleTakeMedicine(medicine, time)}
                             disabled={taken}
-                            className={`p-3 rounded-xl border-2 transition-all flex items-center justify-between ${
-                              taken
+                            className={`p-3 rounded-xl border-2 transition-all flex items-center justify-between ${taken
                                 ? 'bg-green-100 border-green-500 cursor-default'
                                 : 'border-gray-300 hover:border-blue-500 hover:bg-blue-50'
-                            }`}
+                              }`}
                           >
                             <span>{time}</span>
                             {taken ? (

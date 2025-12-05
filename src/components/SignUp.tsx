@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { UserPlus, Mail, Lock, User, Sparkles } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { api } from '../utils/api';
 
 interface SignUpProps {
   onComplete: (data: { userId: string; name: string; token: string; gender: 'male' | 'female' }) => void;
@@ -45,58 +45,13 @@ export function SignUp({ onComplete, onSwitch }: SignUpProps) {
       setIsLoading(true);
 
       // Call backend to create user
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/signup`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ email, password, name }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to create account');
-      }
-
-      // Now sign in to get the access token
-      const signinResponse = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/signin`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({ email, password }),
-        }
-      );
-
-      const signinData = await signinResponse.json();
-
-      if (!signinResponse.ok) {
-        throw new Error('Account created but failed to sign in. Please try signing in manually.');
-      }
+      const data = await api.signUp({ email, password, name });
 
       // Save profile with gender
-      await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/profile`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${signinData.accessToken}`,
-          },
-          body: JSON.stringify({ userId: signinData.userId, gender, name }),
-        }
-      );
+      await api.saveProfile({ userId: data.userId, gender, name });
 
       // Success!
-      onComplete({ userId: signinData.userId, name: signinData.name, token: signinData.accessToken, gender });
+      onComplete({ userId: data.userId, name: data.name, token: data.accessToken, gender });
     } catch (err: any) {
       console.error('Sign up error:', err);
       setError(err.message || 'Failed to create account. Please try again.');

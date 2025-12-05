@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Phone, Plus, Trash2, Heart } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { api } from '../utils/api';
 
 interface EmergencyContactsProps {
   userId: string;
@@ -33,20 +33,7 @@ export function EmergencyContacts({ userId, onClose }: EmergencyContactsProps) {
   const loadContacts = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/contacts/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to load contacts');
-      }
-
-      const data = await response.json();
+      const data = await api.getContacts(userId);
       setContacts(data.contacts || []);
     } catch (error) {
       console.error('Error loading contacts:', error);
@@ -65,24 +52,10 @@ export function EmergencyContacts({ userId, onClose }: EmergencyContactsProps) {
 
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/contacts`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({
-            userId,
-            contacts: updatedContacts,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to save contact');
-      }
+      await api.saveContacts({
+        userId,
+        contacts: updatedContacts,
+      });
 
       setContacts(updatedContacts);
       setNewContact({ name: '', phone: '', relationship: '' });
@@ -100,24 +73,10 @@ export function EmergencyContacts({ userId, onClose }: EmergencyContactsProps) {
 
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/contacts`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({
-            userId,
-            contacts: updatedContacts,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to delete contact');
-      }
+      await api.saveContacts({
+        userId,
+        contacts: updatedContacts,
+      });
 
       setContacts(updatedContacts);
     } catch (error) {

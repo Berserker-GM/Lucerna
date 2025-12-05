@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar as CalendarIcon, TrendingUp, Plus, X } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { api } from '../utils/api';
 
 interface PeriodTrackerProps {
   userId: string;
@@ -50,20 +50,7 @@ export function PeriodTracker({ userId, onClose }: PeriodTrackerProps) {
   const loadPeriodData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/period/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to load period data');
-      }
-
-      const data = await response.json();
+      const data = await api.getPeriodData(userId);
       setPeriods(data.periods || []);
       setPrediction(data.prediction);
     } catch (error) {
@@ -81,26 +68,12 @@ export function PeriodTracker({ userId, onClose }: PeriodTrackerProps) {
 
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/period`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-          body: JSON.stringify({
-            userId,
-            startDate: newPeriod.startDate,
-            endDate: newPeriod.endDate || null,
-            symptoms: newPeriod.symptoms,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to save period data');
-      }
+      await api.savePeriodData({
+        userId,
+        startDate: newPeriod.startDate,
+        endDate: newPeriod.endDate || null,
+        symptoms: newPeriod.symptoms,
+      });
 
       await loadPeriodData();
       setIsAdding(false);
@@ -226,11 +199,10 @@ export function PeriodTracker({ userId, onClose }: PeriodTrackerProps) {
                     <button
                       key={symptom}
                       onClick={() => toggleSymptom(symptom)}
-                      className={`px-4 py-2 rounded-xl border-2 transition-all ${
-                        newPeriod.symptoms.includes(symptom)
+                      className={`px-4 py-2 rounded-xl border-2 transition-all ${newPeriod.symptoms.includes(symptom)
                           ? 'border-pink-500 bg-pink-100 text-pink-700'
                           : 'border-gray-300 hover:border-pink-300'
-                      }`}
+                        }`}
                     >
                       {symptom}
                     </button>

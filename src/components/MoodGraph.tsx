@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { TrendingUp, AlertCircle, Phone } from 'lucide-react';
-import { projectId, publicAnonKey } from '../utils/supabase/info';
+import { api } from '../utils/api';
 
 interface MoodGraphProps {
   userId: string;
@@ -27,30 +27,17 @@ export function MoodGraph({ userId, onCallFriend, onCallTherapist }: MoodGraphPr
   const loadWeekData = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch(
-        `https://${projectId}.supabase.co/functions/v1/make-server-236712f8/checkins/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${publicAnonKey}`,
-          },
-        }
-      );
+      const data = await api.getCheckIns(userId);
 
-      if (!response.ok) {
-        throw new Error('Failed to load check-ins');
-      }
-
-      const data = await response.json();
-      
       // Get last 7 days
       const last7Days: CheckInData[] = [];
       const today = new Date();
-      
+
       for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(date.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
-        
+
         const checkin = data.checkins?.find((c: any) => c.date === dateStr);
         last7Days.push({
           date: dateStr,
@@ -60,7 +47,7 @@ export function MoodGraph({ userId, onCallFriend, onCallTherapist }: MoodGraphPr
       }
 
       setWeekData(last7Days);
-      
+
       // Check for recommendations
       checkMoodPattern(last7Days);
     } catch (error) {
@@ -73,13 +60,13 @@ export function MoodGraph({ userId, onCallFriend, onCallTherapist }: MoodGraphPr
   const checkMoodPattern = (data: CheckInData[]) => {
     // Get today's mood
     const todayMood = data[data.length - 1]?.moodScore || 0;
-    
+
     // Check if today's mood is 1 or 2
     if (todayMood <= 2 && todayMood > 0) {
       setRecommendationType('friend');
       setShowRecommendation(true);
     }
-    
+
     // Check if last 7 days all have mood 1-2
     const allLowMood = data.every((d) => d.moodScore > 0 && d.moodScore <= 2);
     if (allLowMood && data.filter(d => d.moodScore > 0).length >= 7) {
@@ -120,14 +107,13 @@ export function MoodGraph({ userId, onCallFriend, onCallTherapist }: MoodGraphPr
     <div className="space-y-4">
       {/* Recommendation Alert */}
       {showRecommendation && (
-        <div className={`${
-          recommendationType === 'therapist' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'
-        } border-2 rounded-2xl p-6`}>
+        <div className={`${recommendationType === 'therapist' ? 'bg-red-50 border-red-200' : 'bg-yellow-50 border-yellow-200'
+          } border-2 rounded-2xl p-6`}>
           <div className="flex items-start gap-3">
             <AlertCircle className={`w-6 h-6 ${recommendationType === 'therapist' ? 'text-red-600' : 'text-yellow-600'} flex-shrink-0 mt-1`} />
             <div className="flex-1">
               <h3 className="text-lg mb-2 text-gray-800">
-                {recommendationType === 'therapist' 
+                {recommendationType === 'therapist'
                   ? '💜 We Notice You\'ve Been Struggling'
                   : '💙 Having a Tough Day?'}
               </h3>
